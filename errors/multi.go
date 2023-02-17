@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// multiErr is a container for multiple errors which preserves our gmkit/errors
+// multiErr is a container for multiple errors
 // error behaviors.
 type multiErr struct {
 	errs []error

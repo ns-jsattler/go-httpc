@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"github.com/jasonhancock/go-backoff"
 	"io"
 	"io/ioutil"
 	"net/http"
 
 	httpcerrors "github.com/ns-jsattler/go-httpc/errors"
+
+	"github.com/jasonhancock/go-backoff"
 )
 
 // ErrInvalidEncodeFn is an error that is returned when calling the Request Do and the
