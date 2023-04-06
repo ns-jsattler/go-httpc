@@ -1,6 +1,8 @@
 # go-httpc
 Go httpc client
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/ns-jsattler/go-httpc.svg)](https://pkg.go.dev/github.com/ns-jsattler/go-httpc)
+
 This is a fork of the backup from [gmkit](https://github.com/graymeta/gmkit) with external dependencies removed.
 
 example:
