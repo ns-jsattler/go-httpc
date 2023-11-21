@@ -167,10 +167,9 @@ func (r *Request) QueryParam(key, value string) *Request {
 // the same rules as QueryParam. If a key is provided without a value, it will
 // not be added to the request. If it is desired, pass in "" to add a query param
 // with no string field.
-func (r *Request) QueryParams(key, value string, pairs ...string) *Request {
-	paramed := r.QueryParam(key, value)
-	paramed.params = append(paramed.params, toKVPairs(pairs)...)
-	return paramed
+func (r *Request) QueryParams(pairs ...string) *Request {
+	r.params = append(r.params, toKVPairs(pairs)...)
+	return r
 }
 
 // Retry sets the retry policy(s) on the request.
