@@ -48,7 +48,7 @@ type Request struct {
 	authFn            AuthFn
 	encodeFn          EncodeFn
 	decodeFn          DecodeFn
-	onErrorFn         DecodeFn
+	onErrorFn         ErrorFn
 	responseErrFn     ResponseErrorFn
 	responseHeadersFn ResponseHeadersFn
 
@@ -143,7 +143,7 @@ func (r *Request) NotFound(fn StatusFn) *Request {
 }
 
 // OnError provides a decode hook to decode a responses body.
-func (r *Request) OnError(fn DecodeFn) *Request {
+func (r *Request) OnError(fn ErrorFn) *Request {
 	r.onErrorFn = fn
 	return r
 }
@@ -248,7 +248,7 @@ func (r *Request) DoAndGetReader(ctx context.Context) (*http.Response, error) {
 			if r.onErrorFn != nil {
 				var buf bytes.Buffer
 				tee := io.TeeReader(resp.Body, &buf)
-				err = r.onErrorFn(tee)
+				err = r.onErrorFn(tee, status)
 				resp.Body = ioutil.NopCloser(&buf)
 			}
 			return httpcerrors.NewClientErr("status code", err, resp, r.statusErrOpts(status)...)
@@ -319,7 +319,7 @@ func (r *Request) do(ctx context.Context) error {
 		if r.onErrorFn != nil {
 			var buf bytes.Buffer
 			tee := io.TeeReader(resp.Body, &buf)
-			err = r.onErrorFn(tee)
+			err = r.onErrorFn(tee, status)
 			resp.Body = ioutil.NopCloser(&buf)
 		}
 		return httpcerrors.NewClientErr("status code", err, resp, r.statusErrOpts(status)...)
