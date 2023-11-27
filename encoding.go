@@ -13,6 +13,9 @@ type (
 
 	// DecodeFn is a decoder func.
 	DecodeFn func(r io.Reader) error
+
+	// ErrorFn is a decoder func that also gets the status code.
+	ErrorFn func(r io.Reader, status int) error
 )
 
 // JSONEncode sets the client's encodeFn to a json encoder.
