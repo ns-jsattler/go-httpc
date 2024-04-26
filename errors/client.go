@@ -29,12 +29,15 @@ type ClientErr struct {
 	exists     bool
 }
 
+// ErrUnexpectedResponse is the base error.
+var ErrUnexpectedResponse = errors.New("received unexpected response")
+
 // NewClientErr is a constructor for a client error. The provided options
 // allow the caller to set an optional retry.
 func NewClientErr(op string, err error, resp *http.Response, opts ...ClientOptFn) error {
 	newClientErr := &ClientErr{
 		op:  op,
-		err: errors.New("received unexpected response"),
+		err: ErrUnexpectedResponse,
 	}
 	for _, o := range opts {
 		newClientErr = o(newClientErr)
