@@ -57,7 +57,7 @@ func NewClientErr(op string, err error, resp *http.Response, opts ...ClientOptFn
 
 		if req.Header != nil && strings.Contains(req.Header.Get("Content-Type"), "application/json") && req.Body != nil {
 			if body, err := io.ReadAll(req.Body); err == nil {
-				newClientErr.respBody = string(body)
+				newClientErr.reqBody = string(body)
 			}
 		}
 	}
