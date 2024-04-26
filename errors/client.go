@@ -3,7 +3,7 @@ package errors
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -29,12 +29,15 @@ type ClientErr struct {
 	exists     bool
 }
 
+// ErrUnexpectedResponse is the base error.
+var ErrUnexpectedResponse = errors.New("received unexpected response")
+
 // NewClientErr is a constructor for a client error. The provided options
 // allow the caller to set an optional retry.
 func NewClientErr(op string, err error, resp *http.Response, opts ...ClientOptFn) error {
 	newClientErr := &ClientErr{
 		op:  op,
-		err: errors.New("received unexpected response"),
+		err: ErrUnexpectedResponse,
 	}
 	for _, o := range opts {
 		newClientErr = o(newClientErr)
@@ -53,15 +56,15 @@ func NewClientErr(op string, err error, resp *http.Response, opts ...ClientOptFn
 		newClientErr.method = req.Method
 
 		if req.Header != nil && strings.Contains(req.Header.Get("Content-Type"), "application/json") && req.Body != nil {
-			if body, err := ioutil.ReadAll(req.Body); err == nil {
-				newClientErr.respBody = string(body)
+			if body, err := io.ReadAll(req.Body); err == nil {
+				newClientErr.reqBody = string(body)
 			}
 		}
 	}
 	newClientErr.StatusCode = resp.StatusCode
 	newClientErr.reqID = resp.Header.Get(middleware.RequestHeader)
 
-	if body, err := ioutil.ReadAll(resp.Body); err == nil {
+	if body, err := io.ReadAll(resp.Body); err == nil {
 		newClientErr.respBody = string(body)
 	}
 

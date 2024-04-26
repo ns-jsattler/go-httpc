@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	stderrors "errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -369,17 +369,21 @@ func TestClient_Req(t *testing.T) {
 
 	t.Run("handling errors response body", func(t *testing.T) {
 		type bar struct{ Name string }
-
 		t.Run("Do", func(t *testing.T) {
 			doer := new(httpcfakes.FakeDoer)
 			expected := bar{Name: "error"}
 			doer.DoReturns(stubRespNBody(t, http.StatusNotFound, expected), nil)
 			client := httpc.New(doer)
 			var actual bar
+			decode := func(r io.Reader, status int) error {
+				assert.Equal(t, http.StatusNotFound, status)
+				return json.NewDecoder(r).Decode(&actual)
+			}
+
 			err := client.
 				DELETE("/foo").
 				Success(httpc.StatusNoContent()).
-				OnError(httpc.JSONDecode(&actual)).
+				OnError(decode).
 				Do(context.TODO())
 			require.Error(t, err)
 
@@ -395,10 +399,14 @@ func TestClient_Req(t *testing.T) {
 			doer.DoReturns(stubRespNBody(t, http.StatusNotFound, expected), nil)
 			client := httpc.New(doer)
 			var actual bar
+			decode := func(r io.Reader, status int) error {
+				assert.Equal(t, http.StatusNotFound, status)
+				return json.NewDecoder(r).Decode(&actual)
+			}
 			resp, err := client.
 				DELETE("/foo").
 				Success(httpc.StatusNoContent()).
-				OnError(httpc.JSONDecode(&actual)).
+				OnError(decode).
 				DoAndGetReader(context.TODO())
 			require.Error(t, err)
 			require.Nil(t, resp)
@@ -1113,7 +1121,7 @@ func stubRespNBody(t *testing.T, status int, v interface{}) *http.Response {
 	}
 	return &http.Response{
 		StatusCode: status,
-		Body:       ioutil.NopCloser(&buf),
+		Body:       io.NopCloser(&buf),
 	}
 }
 
@@ -1125,7 +1133,7 @@ func stubRespHeaders(status int, headers map[string]string) *http.Response {
 
 	return &http.Response{
 		StatusCode: status,
-		Body:       ioutil.NopCloser(new(bytes.Buffer)),
+		Body:       io.NopCloser(new(bytes.Buffer)),
 		Header:     respHeader,
 	}
 }
@@ -1133,7 +1141,7 @@ func stubRespHeaders(status int, headers map[string]string) *http.Response {
 func stubResp(status int) *http.Response {
 	return &http.Response{
 		StatusCode: status,
-		Body:       ioutil.NopCloser(new(bytes.Buffer)),
+		Body:       io.NopCloser(new(bytes.Buffer)),
 	}
 }
 

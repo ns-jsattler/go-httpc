@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 
 	httpcerrors "github.com/ns-jsattler/go-httpc/errors"
@@ -48,7 +47,7 @@ type Request struct {
 	authFn            AuthFn
 	encodeFn          EncodeFn
 	decodeFn          DecodeFn
-	onErrorFn         DecodeFn
+	onErrorFn         ErrorFn
 	responseErrFn     ResponseErrorFn
 	responseHeadersFn ResponseHeadersFn
 
@@ -143,7 +142,7 @@ func (r *Request) NotFound(fn StatusFn) *Request {
 }
 
 // OnError provides a decode hook to decode a responses body.
-func (r *Request) OnError(fn DecodeFn) *Request {
+func (r *Request) OnError(fn ErrorFn) *Request {
 	r.onErrorFn = fn
 	return r
 }
@@ -248,8 +247,8 @@ func (r *Request) DoAndGetReader(ctx context.Context) (*http.Response, error) {
 			if r.onErrorFn != nil {
 				var buf bytes.Buffer
 				tee := io.TeeReader(resp.Body, &buf)
-				err = r.onErrorFn(tee)
-				resp.Body = ioutil.NopCloser(&buf)
+				err = r.onErrorFn(tee, status)
+				resp.Body = io.NopCloser(&buf)
 			}
 			return httpcerrors.NewClientErr("status code", err, resp, r.statusErrOpts(status)...)
 		}
@@ -319,8 +318,8 @@ func (r *Request) do(ctx context.Context) error {
 		if r.onErrorFn != nil {
 			var buf bytes.Buffer
 			tee := io.TeeReader(resp.Body, &buf)
-			err = r.onErrorFn(tee)
-			resp.Body = ioutil.NopCloser(&buf)
+			err = r.onErrorFn(tee, status)
+			resp.Body = io.NopCloser(&buf)
 		}
 		return httpcerrors.NewClientErr("status code", err, resp, r.statusErrOpts(status)...)
 	}
@@ -416,7 +415,7 @@ func toKVPairs(pairs []string) []kvPair {
 
 // drain reads everything from the ReadCloser and closes it
 func drain(r io.ReadCloser) error {
-	if _, err := io.Copy(ioutil.Discard, r); err != nil {
+	if _, err := io.Copy(io.Discard, r); err != nil {
 		return err
 	}
 	return r.Close()
