@@ -699,7 +699,7 @@ func TestClient_Req(t *testing.T) {
 		})
 	})
 
-	t.Run("headers", func(t *testing.T) {
+	t.Run("header", func(t *testing.T) {
 		t.Run("non duplicates", func(t *testing.T) {
 			doer := new(httpcfakes.FakeDoer)
 			doer.DoReturns(stubResp(200), nil)
@@ -752,6 +752,73 @@ func TestClient_Req(t *testing.T) {
 				GET("/foo").
 				Header("dupe", "val1").
 				Header("dupe", "val2").
+				Success(httpc.StatusOK()).
+				Do(context.TODO())
+			require.NoError(t, err)
+
+			httpReq := doer.DoArgsForCall(0)
+			headers := httpReq.Header
+
+			assert.Equal(t, "val2", headers.Get("dupe"))
+		})
+	})
+
+	t.Run("headers", func(t *testing.T) {
+		t.Run("non duplicates", func(t *testing.T) {
+			doer := new(httpcfakes.FakeDoer)
+			doer.DoReturns(stubResp(200), nil)
+
+			client := httpc.New(doer)
+
+			req := client.
+				GET("/foo")
+
+			vals := []string{}
+
+			for i := 'A'; i <= 'Z'; i++ {
+				vals = append(vals, string(i), string(i+26))
+			}
+
+			req = req.Headers(vals...)
+
+			t.Run("Do", func(t *testing.T) {
+				err := req.Success(httpc.StatusOK()).
+					Do(context.TODO())
+				require.NoError(t, err)
+
+				httpReq := doer.DoArgsForCall(0)
+				headers := httpReq.Header
+
+				for i := 'A'; i <= 'Z'; i++ {
+					assert.Equal(t, string(i+26), headers.Get(string(i)))
+				}
+			})
+
+			t.Run("DoAndGetReader", func(t *testing.T) {
+				resp, err := req.Success(httpc.StatusOK()).
+					DoAndGetReader(context.TODO())
+				defer drain(resp)
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+
+				httpReq := doer.DoArgsForCall(0)
+				headers := httpReq.Header
+
+				for i := 'A'; i <= 'Z'; i++ {
+					assert.Equal(t, string(i+26), headers.Get(string(i)))
+				}
+			})
+		})
+
+		t.Run("duplicate entries last entry wins", func(t *testing.T) {
+			doer := new(httpcfakes.FakeDoer)
+			doer.DoReturns(stubResp(200), nil)
+
+			client := httpc.New(doer)
+
+			err := client.
+				GET("/foo").
+				Headers("dupe", "val1", "dupe", "val2").
 				Success(httpc.StatusOK()).
 				Do(context.TODO())
 			require.NoError(t, err)

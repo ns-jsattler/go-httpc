@@ -128,6 +128,12 @@ func (r *Request) Header(key, value string) *Request {
 	return r
 }
 
+// Headers allows a user to set multiple headers at one time.
+func (r *Request) Headers(pairs ...string) *Request {
+	r.headers = append(r.headers, toKVPairs(pairs)...)
+	return r
+}
+
 // Meta adds k/v pairs to the eror message be added in the event of an error.
 func (r *Request) Meta(key, value string, pairs ...string) *Request {
 	r.logMeta = append(r.logMeta, kvPair{key: key, value: value})
